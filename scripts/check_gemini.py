@@ -1,6 +1,6 @@
 import httpx
 
-key = "AIzaSyDmxaQT-G_PmhZg4TBOaGw5qFMmNym6fIQ"
+key = "AIzaSyAFE-Ur9IiuruULd2bbsX7FmLXPBMV-M9s"
 r = httpx.get(f"https://generativelanguage.googleapis.com/v1beta/models?key={key}", timeout=10)
 if r.status_code == 200:
     models = r.json().get("models", [])

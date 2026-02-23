@@ -20,7 +20,8 @@ from strategy.ai_strategy_parser import AIStrategyParser
 from strategy.strategy_config import StrategyConfig, LegConfig
 from engine.options_backtester import OptionsBacktester, BacktestResult
 from engine.optimizer import ParameterOptimizer, OptimizationReport
-from engine.cost_model import CostConfig
+from engine.cost_model import CostConfig, CostModel
+from engine.codegen_backtester import CodegenBacktester
 from data.supabase_storage import get_storage
 
 router = APIRouter()
@@ -44,6 +45,18 @@ _backtest_history: list[dict] = []
 
 class ParseRequest(BaseModel):
     description: str
+
+
+class CodegenRequest(BaseModel):
+    description: str
+    from_date: str = "2024-01-01"
+    to_date: str = "2024-12-31"
+    lot_size: int = 75
+    entry_time: str = "09:20"
+    exit_time: str = "15:15"
+    slippage_pts: float = 0.5
+    brokerage_per_order: float = 20.0
+    use_taxes: bool = True
 
 
 class LegModel(BaseModel):
@@ -327,6 +340,33 @@ async def parse_strategy(req: ParseRequest):
     except Exception as e:
         logger.error("Parse failed: %s", e, exc_info=True)
         raise HTTPException(500, f"Parse failed: {str(e)}")
+
+
+@router.post("/codegen")
+async def codegen_backtest(req: CodegenRequest):
+    """AI writes & executes strategy code from plain-English description."""
+    try:
+        cost_cfg = CostConfig(
+            slippage_pts=req.slippage_pts,
+            brokerage_per_order=req.brokerage_per_order,
+            use_taxes=req.use_taxes,
+        )
+        engine = CodegenBacktester(cost_config=cost_cfg)
+        result = engine.run(
+            user_prompt=req.description,
+            from_date=date.fromisoformat(req.from_date),
+            to_date=date.fromisoformat(req.to_date),
+            lot_size=req.lot_size,
+            entry_time=req.entry_time,
+            exit_time=req.exit_time,
+        )
+        return result.to_dict()
+    except RuntimeError as e:
+        logger.error("Codegen failed: %s", e, exc_info=True)
+        raise HTTPException(400, str(e))
+    except Exception as e:
+        logger.error("Codegen error: %s", e, exc_info=True)
+        raise HTTPException(500, f"Codegen failed: {str(e)}")
 
 
 @router.post("/backtest")
