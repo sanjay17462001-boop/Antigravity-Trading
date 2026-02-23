@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Backtest Report — MA Crossover</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <style>
+:root {
+  --bg: #0a0e17;
+  --bg2: #111827;
+  --bg3: #1a2236;
+  --card: #151d2e;
+  --border: rgba(255,255,255,0.08);
+  --text: #f1f5f9;
+  --text2: #94a3b8;
+  --text3: #64748b;
+  --accent: #38bdf8;
+  --green: #22c55e;
+  --red: #ef4444;
+  --yellow: #eab308;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', -apple-system, system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.header {
+  text-align: center;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+.header h1 {
+  font-size: 24px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #38bdf8, #818cf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 8px;
+}
+.header .subtitle {
+  color: var(--text3);
+  font-size: 13px;
+}
+.section { margin-bottom: 32px; }
+.section-title {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text3);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.metric-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+.metric-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text3);
+  margin-bottom: 4px;
+}
+.metric-value {
+  font-size: 20px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+}
+.positive { color: var(--green); }
+.negative { color: var(--red); }
+.neutral { color: var(--text); }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text3);
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+}
+td {
+  padding: 8px 14px;
+  font-size: 12px;
+  color: var(--text2);
+  border-bottom: 1px solid var(--border);
+  font-family: 'JetBrains Mono', monospace;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,0.02); }
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+}
+.tag-green { background: rgba(34,197,94,0.12); color: var(--green); }
+.tag-red { background: rgba(239,68,68,0.12); color: var(--red); }
+canvas { width: 100% !important; border-radius: 8px; }
+.chart-container {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+}
+.row { display: flex; gap: 16px; }
+.flex-1 { flex: 1; }
+.flex-2 { flex: 2; }
+.footer {
+  text-align: center;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  color: var(--text3);
+  font-size: 11px;
+}
+@media print {
+  body { background: white; color: #1a1a1a; }
+  .metric-card { border: 1px solid #ddd; }
+  table { border: 1px solid #ddd; }
+}
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>Backtest Report — MA Crossover</h1>
+    <div class="subtitle">
+      MA Crossover &middot; NIFTY 50 &middot; 5min
+       &middot; Dec 2025 — Feb 2026
+    </div>
+    <div class="subtitle" style="margin-top:4px">Generated: 2026-02-20 19:50:15 IST</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Performance Summary</div>
+    <div class="metrics-grid"><div class="metric-card">
+  <div class="metric-label">Total Return</div>
+  <div class="metric-value positive">+12.40%</div>
+</div><div class="metric-card">
+  <div class="metric-label">Sharpe Ratio</div>
+  <div class="metric-value positive">1.82</div>
+</div><div class="metric-card">
+  <div class="metric-label">Max Drawdown</div>
+  <div class="metric-value negative">-6.30%</div>
+</div><div class="metric-card">
+  <div class="metric-label">Total Trades</div>
+  <div class="metric-value neutral">439</div>
+</div><div class="metric-card">
+  <div class="metric-label">Win Rate</div>
+  <div class="metric-value positive">+62.80%</div>
+</div><div class="metric-card">
+  <div class="metric-label">Profit Factor</div>
+  <div class="metric-value positive">1.64</div>
+</div><div class="metric-card">
+  <div class="metric-label">Avg Win</div>
+  <div class="metric-value positive">+₹3,240</div>
+</div><div class="metric-card">
+  <div class="metric-label">Avg Loss</div>
+  <div class="metric-value negative">₹1,980</div>
+</div><div class="metric-card">
+  <div class="metric-label">Sortino Ratio</div>
+  <div class="metric-value positive">2.14</div>
+</div><div class="metric-card">
+  <div class="metric-label">Calmar Ratio</div>
+  <div class="metric-value positive">1.97</div>
+</div><div class="metric-card">
+  <div class="metric-label">Best Trade</div>
+  <div class="metric-value positive">+₹14,200</div>
+</div><div class="metric-card">
+  <div class="metric-label">Worst Trade</div>
+  <div class="metric-value negative">₹8,700</div>
+</div></div>
+  </div>
+
+  
+        <div class="section">
+          <div class="section-title">Equity Curve</div>
+          <div class="chart-container">
+            <canvas id="equityChart" height="100"></canvas>
+          </div>
+        </div>
+  
+        <div class="section">
+          <div class="section-title">Drawdown</div>
+          <div class="chart-container">
+            <canvas id="drawdownChart" height="60"></canvas>
+          </div>
+        </div>
+  
+        <div class="section">
+          <div class="section-title">Monthly Returns</div>
+          <table>
+            <thead><tr><th>Month</th><th>Trades</th><th>Return</th></tr></thead>
+            <tbody><tr>
+              <td>Dec 2025</td>
+              <td>142</td>
+              <td class="positive">+2.10%</td>
+            </tr><tr>
+              <td>Jan 2026</td>
+              <td>168</td>
+              <td class="negative">-1.30%</td>
+            </tr><tr>
+              <td>Feb 2026</td>
+              <td>129</td>
+              <td class="positive">+3.80%</td>
+            </tr></tbody>
+          </table>
+        </div>
+  
+        <div class="section">
+          <div class="section-title">Trade Log (5 trades)</div>
+          <table>
+            <thead><tr><th>Date</th><th>Symbol</th><th>Side</th><th>Qty</th><th>Entry</th><th>Exit</th><th>P&L</th></tr></thead>
+            <tbody><tr>
+              <td>2026-01-15</td>
+              <td style="color:var(--text);font-weight:500">NIFTY 25500 CE</td>
+              <td><span class="tag tag-green">BUY</span></td>
+              <td>50</td>
+              <td>228.6</td>
+              <td>278.5</td>
+              <td class="positive">+₹2,495</td>
+            </tr><tr>
+              <td>2026-01-16</td>
+              <td style="color:var(--text);font-weight:500">NIFTY 25400 PE</td>
+              <td><span class="tag tag-red">SELL</span></td>
+              <td>50</td>
+              <td>180.4</td>
+              <td>155.6</td>
+              <td class="positive">+₹1,240</td>
+            </tr><tr>
+              <td>2026-01-17</td>
+              <td style="color:var(--text);font-weight:500">BANKNIFTY 61000 CE</td>
+              <td><span class="tag tag-green">BUY</span></td>
+              <td>15</td>
+              <td>410.0</td>
+              <td>445.3</td>
+              <td class="positive">+₹530</td>
+            </tr><tr>
+              <td>2026-01-18</td>
+              <td style="color:var(--text);font-weight:500">NIFTY FUT MAR</td>
+              <td><span class="tag tag-green">BUY</span></td>
+              <td>50</td>
+              <td>25410.5</td>
+              <td>25380.0</td>
+              <td class="negative">-₹1,525</td>
+            </tr><tr>
+              <td>2026-01-20</td>
+              <td style="color:var(--text);font-weight:500">NIFTY 25600 PE</td>
+              <td><span class="tag tag-red">SELL</span></td>
+              <td>50</td>
+              <td>195.2</td>
+              <td>210.4</td>
+              <td class="negative">-₹760</td>
+            </tr></tbody>
+          </table>
+        </div>
+
+  <div class="footer">
+    Antigravity Trading Platform &middot; Report generated automatically &middot; 2026-02-20 19:50:15 IST
+  </div>
+
+  <script>
+new Chart(document.getElementById('equityChart'), {
+    type: 'line',
+    data: {
+        labels: ["Day 1", "Day 2", "Day 3", "Day 4", "Day 5", "Day 6", "Day 7", "Day 8", "Day 9", "Day 10", "Day 11", "Day 12", "Day 13", "Day 14", "Day 15", "Day 16", "Day 17", "Day 18", "Day 19", "Day 20", "Day 21", "Day 22", "Day 23", "Day 24", "Day 25", "Day 26", "Day 27", "Day 28", "Day 29", "Day 30", "Day 31", "Day 32", "Day 33", "Day 34", "Day 35", "Day 36", "Day 37", "Day 38", "Day 39", "Day 40", "Day 41", "Day 42", "Day 43", "Day 44", "Day 45", "Day 46", "Day 47", "Day 48", "Day 49", "Day 50", "Day 51", "Day 52", "Day 53", "Day 54", "Day 55", "Day 56", "Day 57", "Day 58", "Day 59", "Day 60", "Day 61", "Day 62", "Day 63", "Day 64", "Day 65", "Day 66", "Day 67", "Day 68", "Day 69", "Day 70", "Day 71", "Day 72", "Day 73", "Day 74", "Day 75", "Day 76", "Day 77", "Day 78", "Day 79", "Day 80", "Day 81", "Day 82", "Day 83", "Day 84", "Day 85", "Day 86", "Day 87", "Day 88", "Day 89", "Day 90", "Day 91", "Day 92", "Day 93", "Day 94", "Day 95", "Day 96", "Day 97", "Day 98", "Day 99", "Day 100", "Day 101", "Day 102", "Day 103", "Day 104", "Day 105", "Day 106", "Day 107", "Day 108", "Day 109", "Day 110", "Day 111", "Day 112", "Day 113", "Day 114", "Day 115", "Day 116", "Day 117", "Day 118", "Day 119", "Day 120"],
+        datasets: [{
+        label: 'Strategy',
+        data: [1000000, 1004376, 1008610, 1012564, 1016112, 1019146, 1021577, 1023338, 1024392, 1024729, 1024367, 1023353, 1021758, 1019679, 1017230, 1014540, 1011749, 1009000, 1006435, 1004187, 1002378, 1001112, 1000471, 1000514, 1001269, 1002739, 1004898, 1007690, 1011037, 1014837, 1018971, 1023304, 1027698, 1032008, 1036094, 1039826, 1043086, 1045777, 1047823, 1049174, 1049808, 1049733, 1048983, 1047619, 1045729, 1043418, 1040812, 1038046, 1035262, 1032603, 1030208, 1027002, 1024299, 1022190, 1020743, 1020000, 1019975, 1020652, 1021989, 1023917, 1026342, 1029152, 1032219, 1035405, 1038567, 1041563, 1044257, 1046527, 1048265, 1049387, 1073831, 1074764, 1074982, 1074506, 1073389, 1071705, 1069555, 1067056, 1064340, 1061546, 1058818, 1056296, 1054114, 1052390, 1051224, 1050695, 1050856, 1051732, 1053321, 1055590, 1058482, 1061913, 1065778, 1069954, 1074308, 1078698, 1082980, 1087015, 1090675, 1093846, 1096433, 1098365, 1099596, 1100110, 1099918, 1099060, 1097601, 1095632, 1093263, 1090620, 1087841, 1085068, 1082444, 1080105, 1078177, 1076768, 1075966, 1075836, 1076413, 1077708],
+        borderColor: '#38bdf8',
+        backgroundColor: 'rgba(56,189,248,0.1)',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.3,
+        pointRadius: 0,
+    },{
+        label: 'Benchmark',
+        data: [1000000, 1000400, 1000800, 1001200, 1001600, 1002000, 1002400, 1002800, 1003200, 1003600, 1004000, 1004400, 1004800, 1005200, 1005600, 1006000, 1006400, 1006800, 1007200, 1007600, 1008000, 1008400, 1008800, 1009200, 1009600, 1010000, 1010400, 1010800, 1011200, 1011600, 1012000, 1012400, 1012800, 1013200, 1013600, 1014000, 1014400, 1014800, 1015200, 1015600, 1016000, 1016400, 1016800, 1017200, 1017600, 1018000, 1018400, 1018800, 1019200, 1019600, 1020000, 1020400, 1020800, 1021200, 1021600, 1022000, 1022400, 1022800, 1023200, 1023600, 1024000, 1024400, 1024800, 1025200, 1025600, 1026000, 1026400, 1026800, 1027200, 1027600, 1028000, 1028400, 1028800, 1029200, 1029600, 1030000, 1030400, 1030800, 1031200, 1031600, 1032000, 1032400, 1032800, 1033200, 1033600, 1034000, 1034400, 1034800, 1035200, 1035600, 1036000, 1036400, 1036800, 1037200, 1037600, 1038000, 1038400, 1038800, 1039200, 1039600, 1040000, 1040400, 1040800, 1041200, 1041600, 1042000, 1042400, 1042800, 1043200, 1043600, 1044000, 1044400, 1044800, 1045200, 1045600, 1046000, 1046400, 1046800, 1047200, 1047600],
+        borderColor: '#64748b',
+        borderWidth: 1,
+        borderDash: [5, 5],
+        fill: false,
+        tension: 0.3,
+        pointRadius: 0,
+    }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: true, labels: { color: '#94a3b8' } } },
+        scales: {
+            x: { ticks: { color: '#64748b', maxTicksLimit: 10 }, grid: { color: 'rgba(255,255,255,0.04)' } },
+            y: { ticks: { color: '#64748b', callback: v => (v/100000).toFixed(1)+'L' }, grid: { color: 'rgba(255,255,255,0.04)' } }
+        }
+    }
+});
+new Chart(document.getElementById('drawdownChart'), {
+    type: 'line',
+    data: {
+        labels: ["Day 1", "Day 2", "Day 3", "Day 4", "Day 5", "Day 6", "Day 7", "Day 8", "Day 9", "Day 10", "Day 11", "Day 12", "Day 13", "Day 14", "Day 15", "Day 16", "Day 17", "Day 18", "Day 19", "Day 20", "Day 21", "Day 22", "Day 23", "Day 24", "Day 25", "Day 26", "Day 27", "Day 28", "Day 29", "Day 30", "Day 31", "Day 32", "Day 33", "Day 34", "Day 35", "Day 36", "Day 37", "Day 38", "Day 39", "Day 40", "Day 41", "Day 42", "Day 43", "Day 44", "Day 45", "Day 46", "Day 47", "Day 48", "Day 49", "Day 50", "Day 51", "Day 52", "Day 53", "Day 54", "Day 55", "Day 56", "Day 57", "Day 58", "Day 59", "Day 60", "Day 61", "Day 62", "Day 63", "Day 64", "Day 65", "Day 66", "Day 67", "Day 68", "Day 69", "Day 70", "Day 71", "Day 72", "Day 73", "Day 74", "Day 75", "Day 76", "Day 77", "Day 78", "Day 79", "Day 80", "Day 81", "Day 82", "Day 83", "Day 84", "Day 85", "Day 86", "Day 87", "Day 88", "Day 89", "Day 90", "Day 91", "Day 92", "Day 93", "Day 94", "Day 95", "Day 96", "Day 97", "Day 98", "Day 99", "Day 100", "Day 101", "Day 102", "Day 103", "Day 104", "Day 105", "Day 106", "Day 107", "Day 108", "Day 109", "Day 110", "Day 111", "Day 112", "Day 113", "Day 114", "Day 115", "Day 116", "Day 117", "Day 118", "Day 119", "Day 120"],
+        datasets: [{
+            label: 'Drawdown %',
+            data: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.04, -0.13, -0.29, -0.49, -0.73, -0.99, -1.27, -1.53, -1.79, -2.0, -2.18, -2.3, -2.37, -2.36, -2.29, -2.15, -1.94, -1.66, -1.34, -0.97, -0.56, -0.14, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.01, -0.08, -0.21, -0.39, -0.61, -0.86, -1.12, -1.39, -1.64, -1.87, -2.17, -2.43, -2.63, -2.77, -2.84, -2.84, -2.78, -2.65, -2.47, -2.24, -1.97, -1.68, -1.37, -1.07, -0.79, -0.53, -0.31, -0.15, -0.04, 0.0, 0.0, 0.0, -0.04, -0.15, -0.3, -0.5, -0.74, -0.99, -1.25, -1.5, -1.74, -1.94, -2.1, -2.21, -2.26, -2.24, -2.16, -2.02, -1.8, -1.53, -1.22, -0.86, -0.47, -0.06, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.02, -0.1, -0.23, -0.41, -0.62, -0.86, -1.12, -1.37, -1.61, -1.82, -1.99, -2.12, -2.19, -2.21, -2.15, -2.04],
+            borderColor: '#ef4444',
+            backgroundColor: 'rgba(239,68,68,0.1)',
+            borderWidth: 1.5,
+            fill: true,
+            tension: 0.3,
+            pointRadius: 0,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { ticks: { color: '#64748b', maxTicksLimit: 10 }, grid: { color: 'rgba(255,255,255,0.04)' } },
+            y: { ticks: { color: '#64748b', callback: v => v.toFixed(1)+'%' }, grid: { color: 'rgba(255,255,255,0.04)' } }
+        }
+    }
+});</script>
+</body>
+</html>

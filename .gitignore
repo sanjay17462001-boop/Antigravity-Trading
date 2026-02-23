@@ -1,0 +1,42 @@
+# Git-ignore for Antigravity Trading
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Storage (data files — too large for git)
+storage/
+*.parquet
+*.db
+
+# Secrets (never commit!)
+.env
+config/settings.yaml
+
+# Logs
+*.log
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Node (dashboard frontend)
+dashboard/frontend/node_modules/
+dashboard/frontend/.next/
+dashboard/frontend/out/

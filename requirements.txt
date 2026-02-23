@@ -1,0 +1,35 @@
+# Core
+pydantic>=2.5
+pyyaml>=6.0
+python-dotenv>=1.0
+
+# Data
+pandas>=2.1
+numpy>=1.26
+pyarrow>=14.0
+
+# Indicators
+pandas-ta>=0.3.14b1
+
+# Options pricing
+py-vollib>=1.0.1
+scipy>=1.11
+
+# Broker SDKs
+dhanhq>=2.0
+
+# Web dashboard
+fastapi>=0.109
+uvicorn[standard]>=0.25
+websockets>=12.0
+
+# Utilities
+httpx>=0.26
+aiofiles>=23.2
+rich>=13.7
+pyotp>=2.9
+
+# Dev
+pytest>=7.4
+pytest-asyncio>=0.23
+ruff>=0.2
