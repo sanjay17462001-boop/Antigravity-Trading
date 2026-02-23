@@ -195,13 +195,39 @@ class CodegenBacktester:
         self.cost_model = CostModel(cost_config or CostConfig())
         self.cost_config = cost_config or CostConfig()
 
-    def generate_code(self, user_prompt: str) -> tuple[str, str]:
+    def generate_code(self, user_prompt: str, max_retries: int = 3) -> tuple[str, str]:
         """
         Call Gemini to generate strategy code from user prompt.
+        Validates the code and retries if it's incomplete.
 
         Returns:
             (code_string, strategy_name)
         """
+        for attempt in range(max_retries):
+            code, name = self._call_gemini(user_prompt, attempt)
+            # Validate: code must contain essential SDK calls
+            if "open_position" in code and "get_candles" in code and "def strategy" in code:
+                logger.info("Code validation passed (attempt %d)", attempt + 1)
+                return code, name
+            logger.warning("Generated code missing essential SDK calls (attempt %d/%d)", attempt + 1, max_retries)
+
+        # Return whatever we got on final attempt
+        logger.error("All %d code generation attempts produced invalid code", max_retries)
+        return code, name
+
+    def _call_gemini(self, user_prompt: str, attempt: int = 0) -> tuple[str, str]:
+        """Single Gemini API call for code generation."""
+        extra_instruction = ""
+        if attempt > 0:
+            extra_instruction = (
+                "\n\nIMPORTANT: Your previous code was incomplete. You MUST include:\n"
+                "1. ctx.open_position() calls to enter trades\n"
+                "2. ctx.get_candles() to get price data\n"
+                "3. A candle-by-candle for loop for monitoring\n"
+                "4. ctx.close_position() or ctx.close_all() for exits\n"
+                "Make sure the function is COMPLETE and not truncated.\n"
+            )
+
         payload = {
             "contents": [
                 {
@@ -209,12 +235,13 @@ class CodegenBacktester:
                     "parts": [{
                         "text": f"{CODEGEN_SYSTEM_PROMPT}\n\n"
                                 f"Generate a strategy function for this:\n{user_prompt}"
+                                f"{extra_instruction}"
                     }],
                 }
             ],
             "generationConfig": {
-                "temperature": 0.15,
-                "maxOutputTokens": 4096,
+                "temperature": 0,
+                "maxOutputTokens": 8192,
             },
         }
 
