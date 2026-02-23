@@ -4,7 +4,7 @@ import Header from "@/components/Header";
 import { useState, useCallback, useEffect } from "react";
 import { Sparkles, Play, BarChart3, TrendingUp, Clock, Target, Shield, Sliders, Loader2, CheckCircle2, ChevronDown, ChevronUp, Save, Trash2, History, DollarSign, Plus, ToggleLeft, ToggleRight, GitCompare } from "lucide-react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API = process.env.NEXT_PUBLIC_API_URL || "";
 interface LegConfig { action: string; strike: string; option_type: string; lots: number; sl_pct: number | null; target_pct: number | null; sl_type?: string; target_type?: string; }
 interface SavedStrategy { id: string; name: string; description: string; legs: LegConfig[]; entry_time: string; exit_time: string; sl_pct: number; sl_type: string; target_pct: number; target_type: string; lot_size: number; created_at: string; }
 
