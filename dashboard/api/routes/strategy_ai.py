@@ -139,6 +139,20 @@ def _build_config(req) -> StrategyConfig:
     )
 
 
+def _sanitize(obj):
+    """Recursively sanitize a dict/list for JSON — replace NaN/Inf/numpy with safe values."""
+    import math, numpy as np
+    if isinstance(obj, dict):
+        return {k: _sanitize(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_sanitize(v) for v in obj]
+    if isinstance(obj, (float, np.floating)):
+        v = float(obj)
+        return 0 if math.isnan(v) or math.isinf(v) else round(v, 6)
+    if isinstance(obj, (np.integer,)):
+        return int(obj)
+    return obj
+
 def _result_to_dict(result: BacktestResult, dte_buckets=None) -> dict:
     """Convert BacktestResult to JSON-serializable dict with all metrics."""
     trades = []
@@ -253,7 +267,7 @@ def _result_to_dict(result: BacktestResult, dte_buckets=None) -> dict:
             "net_pnl": round(sum(t.net_pnl for t in all_in_col), 2),
         }
 
-    return {
+    return _sanitize({
         "strategy": result.strategy.to_dict() if result.strategy else {},
         "summary": {
             "total_trades": result.total_trades,
@@ -285,7 +299,7 @@ def _result_to_dict(result: BacktestResult, dte_buckets=None) -> dict:
         "year_dte_matrix": year_dte_matrix,
         "trades": trades,
         "equity_curve": equity_curve,
-    }
+    })
 
 
 # =========================================================================
