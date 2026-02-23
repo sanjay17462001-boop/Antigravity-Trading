@@ -395,7 +395,12 @@ class DataLoader:
         if self._index_built:
             return
         for f in DATA_DIR.glob("NIFTY_Options_*.csv"):
-            parts = f.stem.replace("NIFTY_Options_", "").replace("NIFTY_Options_Phase2_", "")
+            # Strip prefix — Phase2 first (longer match), then base
+            stem = f.stem
+            if stem.startswith("NIFTY_Options_Phase2_"):
+                parts = stem.replace("NIFTY_Options_Phase2_", "")
+            else:
+                parts = stem.replace("NIFTY_Options_", "")
             try:
                 dates = parts.split("_")
                 file_from = pd.Timestamp(dates[0])
