@@ -12,11 +12,11 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from data.storage import DataStorage
+from data.supabase_storage import get_storage
 
 router = APIRouter()
 logger = logging.getLogger("antigravity.dashboard.strategies")
-storage = DataStorage()
+storage = get_storage()
 
 
 class StrategyCreate(BaseModel):

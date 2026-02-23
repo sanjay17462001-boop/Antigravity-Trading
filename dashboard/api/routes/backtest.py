@@ -13,13 +13,13 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from core.models import Exchange, Instrument, Interval, Segment
-from data.storage import DataStorage
+from data.supabase_storage import get_storage
 from engine.backtester import Backtester
 from strategy.examples.simple_ma_crossover import MACrossoverStrategy
 
 router = APIRouter()
 logger = logging.getLogger("antigravity.dashboard.backtest")
-storage = DataStorage()
+storage = get_storage()
 
 
 class BacktestRequest(BaseModel):

@@ -13,11 +13,11 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 from core.models import Exchange, Instrument, Interval, Segment
-from data.storage import DataStorage
+from data.supabase_storage import get_storage
 
 router = APIRouter()
 logger = logging.getLogger("antigravity.dashboard.data")
-storage = DataStorage()
+storage = get_storage()
 
 
 @router.get("/instruments")

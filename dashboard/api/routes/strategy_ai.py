@@ -21,16 +21,20 @@ from strategy.strategy_config import StrategyConfig, LegConfig
 from engine.options_backtester import OptionsBacktester, BacktestResult
 from engine.optimizer import ParameterOptimizer, OptimizationReport
 from engine.cost_model import CostConfig
+from data.supabase_storage import get_storage
 
 router = APIRouter()
 logger = logging.getLogger("antigravity.dashboard.strategy_ai")
 ai_parser = AIStrategyParser()
 
-# Strategy persistence directory
+# Cloud or local storage
+_storage = get_storage()
+
+# Fallback: local file persistence (used only if Supabase unavailable)
 STRATEGIES_DIR = Path(__file__).resolve().parent.parent.parent.parent / "storage" / "strategies"
 STRATEGIES_DIR.mkdir(parents=True, exist_ok=True)
 
-# In-memory cache for backtest results (for comparison)
+# In-memory fallback for backtest history
 _backtest_history: list[dict] = []
 
 
@@ -275,7 +279,7 @@ async def run_options_backtest(req: BacktestRequest):
 
         # Save to history for comparison (Fix #3)
         run_id = str(uuid.uuid4())[:8]
-        _backtest_history.append({
+        history_entry = {
             "run_id": run_id,
             "timestamp": datetime.now().isoformat(),
             "name": config.name,
@@ -283,7 +287,17 @@ async def run_options_backtest(req: BacktestRequest):
             "to_date": req.to_date,
             "summary": response["summary"],
             "config": config.to_dict(),
-        })
+        }
+
+        # Persist to Supabase if available, else in-memory
+        if hasattr(_storage, 'save_ai_backtest'):
+            try:
+                _storage.save_ai_backtest(run_id, history_entry)
+            except Exception as e:
+                logger.warning("Supabase save failed, using memory: %s", e)
+                _backtest_history.append(history_entry)
+        else:
+            _backtest_history.append(history_entry)
 
         response["run_id"] = run_id
         return response
@@ -334,7 +348,7 @@ async def run_optimization(req: OptimizeRequest):
 
 @router.post("/strategies/save")
 async def save_strategy(req: SaveStrategyRequest):
-    """Save a strategy configuration to disk."""
+    """Save a strategy configuration."""
     strat_id = str(uuid.uuid4())[:8]
     data = {
         "id": strat_id,
@@ -354,14 +368,32 @@ async def save_strategy(req: SaveStrategyRequest):
         "dte_max": req.dte_max,
         "created_at": datetime.now().isoformat(),
     }
-    filepath = STRATEGIES_DIR / f"{strat_id}.json"
-    filepath.write_text(json.dumps(data, indent=2))
+    # Save to Supabase if available, else local JSON
+    if hasattr(_storage, 'save_ai_strategy'):
+        try:
+            _storage.save_ai_strategy(strat_id, data)
+        except Exception as e:
+            logger.warning("Supabase save failed, using file: %s", e)
+            filepath = STRATEGIES_DIR / f"{strat_id}.json"
+            filepath.write_text(json.dumps(data, indent=2))
+    else:
+        filepath = STRATEGIES_DIR / f"{strat_id}.json"
+        filepath.write_text(json.dumps(data, indent=2))
     return {"status": "saved", "id": strat_id, "strategy": data}
 
 
 @router.get("/strategies/list")
 async def list_saved_strategies():
     """List all saved strategies."""
+    # Try Supabase first
+    if hasattr(_storage, 'list_ai_strategies'):
+        try:
+            strategies = _storage.list_ai_strategies()
+            return {"strategies": strategies, "count": len(strategies)}
+        except Exception as e:
+            logger.warning("Supabase list failed, falling back to files: %s", e)
+
+    # Fallback to local JSON files
     strategies = []
     for f in sorted(STRATEGIES_DIR.glob("*.json"), key=lambda x: x.stat().st_mtime, reverse=True):
         try:
@@ -375,6 +407,14 @@ async def list_saved_strategies():
 @router.get("/strategies/{strat_id}")
 async def get_strategy(strat_id: str):
     """Get a saved strategy by ID."""
+    if hasattr(_storage, 'get_ai_strategy'):
+        try:
+            data = _storage.get_ai_strategy(strat_id)
+            if data:
+                return data
+        except Exception:
+            pass
+    # Fallback to file
     filepath = STRATEGIES_DIR / f"{strat_id}.json"
     if not filepath.exists():
         raise HTTPException(404, "Strategy not found")
@@ -384,6 +424,12 @@ async def get_strategy(strat_id: str):
 @router.delete("/strategies/{strat_id}")
 async def delete_strategy(strat_id: str):
     """Delete a saved strategy."""
+    if hasattr(_storage, 'delete_ai_strategy'):
+        try:
+            _storage.delete_ai_strategy(strat_id)
+        except Exception:
+            pass
+    # Also clean up local file if it exists
     filepath = STRATEGIES_DIR / f"{strat_id}.json"
     if filepath.exists():
         filepath.unlink()
@@ -397,4 +443,10 @@ async def delete_strategy(strat_id: str):
 @router.get("/history")
 async def backtest_history():
     """Get backtest run history for comparison."""
+    if hasattr(_storage, 'list_ai_backtests'):
+        try:
+            runs = _storage.list_ai_backtests()
+            return {"runs": runs, "count": len(runs)}
+        except Exception as e:
+            logger.warning("Supabase history failed: %s", e)
     return {"runs": list(reversed(_backtest_history[-50:])), "count": len(_backtest_history)}

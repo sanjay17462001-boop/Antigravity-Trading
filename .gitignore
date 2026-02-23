@@ -40,3 +40,7 @@ Thumbs.db
 dashboard/frontend/node_modules/
 dashboard/frontend/.next/
 dashboard/frontend/out/
+
+# Vercel serverless
+api/__pycache__/
+.vercel/
