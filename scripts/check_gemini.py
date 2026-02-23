@@ -1,6 +1,13 @@
+import os
 import httpx
+from dotenv import load_dotenv
+from pathlib import Path
+load_dotenv(Path(__file__).parent.parent / ".env")
 
-key = "AIzaSyAFE-Ur9IiuruULd2bbsX7FmLXPBMV-M9s"
+key = os.environ.get("GEMINI_API_KEY", "")
+if not key:
+    print("ERROR: GEMINI_API_KEY not found in .env file")
+    exit(1)
 r = httpx.get(f"https://generativelanguage.googleapis.com/v1beta/models?key={key}", timeout=10)
 if r.status_code == 200:
     models = r.json().get("models", [])
