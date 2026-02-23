@@ -16,14 +16,16 @@ import json
 import logging
 from typing import Optional
 
+import os
+
 import httpx
 
 from strategy.strategy_config import StrategyConfig, LegConfig
 
 logger = logging.getLogger("antigravity.ai_parser")
 
-GEMINI_API_KEY = "AIzaSyDmxaQT-G_PmhZg4TBOaGw5qFMmNym6fIQ"
-GEMINI_MODEL = "gemini-2.5-flash"
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_MODEL = "gemini-2.0-flash"
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
 
 SYSTEM_PROMPT = """You are a NIFTY options strategy parser. Convert plain-English strategy descriptions into JSON.
