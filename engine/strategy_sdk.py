@@ -136,6 +136,16 @@ class StrategyContext:
             self._spot = 0.0
             self._vix = 0.0
 
+    @staticmethod
+    def _to_time(t) -> time:
+        """Convert string 'HH:MM' or time object to time. Handles both."""
+        if isinstance(t, time):
+            return t
+        if isinstance(t, str):
+            parts = t.replace(":", " ").split()
+            return time(int(parts[0]), int(parts[1]))
+        return t
+
     # ── Read-only properties ──
 
     @property
@@ -195,8 +205,9 @@ class StrategyContext:
         df = self._day_data[mask].copy().sort_values("timestamp").reset_index(drop=True)
         return df
 
-    def get_spot_price_at(self, t: time) -> float:
-        """Get spot price at a specific time of day."""
+    def get_spot_price_at(self, t) -> float:
+        """Get spot price at a specific time of day. Accepts time object or 'HH:MM' string."""
+        t = self._to_time(t)
         if self._day_data.empty:
             return 0.0
         mask = (self._day_data["timestamp"].dt.hour == t.hour) & \
@@ -206,8 +217,9 @@ class StrategyContext:
             return self._spot
         return float(rows.iloc[0].get("spot_price", self._spot))
 
-    def get_option_price_at(self, strike: str, option_type: str, t: time) -> float:
-        """Get option open price at a specific time."""
+    def get_option_price_at(self, strike: str, option_type: str, t) -> float:
+        """Get option open price at a specific time. Accepts time object or 'HH:MM' string."""
+        t = self._to_time(t)
         candles = self.get_candles(strike, option_type)
         if candles.empty:
             return 0.0
@@ -234,7 +246,7 @@ class StrategyContext:
         lots: int = 1,
         label: str = "",
         price: Optional[float] = None,
-        at_time: Optional[time] = None,
+        at_time = None,
     ) -> int:
         """
         Open a new position.
@@ -246,11 +258,13 @@ class StrategyContext:
             lots: Number of lots
             label: Optional label (e.g., "CE leg", "hedge")
             price: Override entry price (otherwise uses open price at at_time or entry_time)
-            at_time: Time to enter (defaults to configured entry_time)
+            at_time: Time to enter — accepts time object or 'HH:MM' string
 
         Returns:
             position_id (int) for tracking
         """
+        if at_time is not None:
+            at_time = self._to_time(at_time)
         if price is None:
             if at_time is None:
                 h, m = map(int, self._entry_time_str.split(":"))
@@ -349,11 +363,12 @@ class StrategyContext:
                 return p
         return None
 
-    def update_prices(self, candle_time: time):
+    def update_prices(self, candle_time):
         """
         Update current_price for all open positions based on candle close at the given time.
-        Called internally during candle walk.
+        Accepts time object or 'HH:MM' string.
         """
+        candle_time = self._to_time(candle_time)
         for pos in self._positions:
             if not pos.is_open:
                 continue
