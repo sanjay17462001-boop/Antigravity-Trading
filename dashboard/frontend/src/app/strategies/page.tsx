@@ -19,7 +19,8 @@ function StatCard({ label, value, color, sub }: { label: string; value: string; 
 }
 async function safeFetch(url: string, opts?: RequestInit, timeoutMs = 8000) {
     const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-    try { const r = await fetch(url, { ...opts, signal: ctrl.signal }); clearTimeout(timer); return r; } catch { clearTimeout(timer); return null; }
+    const headers = { ...((opts?.headers as Record<string, string>) || {}), "ngrok-skip-browser-warning": "1" };
+    try { const r = await fetch(url, { ...opts, headers, signal: ctrl.signal }); clearTimeout(timer); return r; } catch { clearTimeout(timer); return null; }
 }
 
 export default function StrategiesPage() {
