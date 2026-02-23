@@ -37,7 +37,7 @@ export default function StrategiesPage() {
     const [lotSize, setLotSize] = useState(25);
     const [fromDate, setFromDate] = useState("2024-01-01"); const [toDate, setToDate] = useState("2024-12-31");
     const [slippage, setSlippage] = useState(0.5); const [brokerage, setBrokerage] = useState(20);
-    const [dteBucketsStr, setDteBucketsStr] = useState("0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10");
+    const [dteBucketsStr, setDteBucketsStr] = useState("0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11+");
     // Backtest
     const [running, setRunning] = useState(false); const [result, setResult] = useState<any>(null); const [btError, setBtError] = useState("");
     // Cost layer toggle

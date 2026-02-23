@@ -190,7 +190,7 @@ def _result_to_dict(result: BacktestResult, dte_buckets=None) -> dict:
             parsed_buckets = None  # use defaults
 
     # Year × DTE pivot matrix
-    dte_buckets_final = parsed_buckets or [(0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7), (8, 8), (9, 9), (10, 10)]
+    dte_buckets_final = parsed_buckets or [(0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7), (8, 8), (9, 9), (10, 10), (11, 999)]
     dte_labels = []
     for lo, hi in dte_buckets_final:
         if lo == hi:
