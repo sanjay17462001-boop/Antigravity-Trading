@@ -2,7 +2,7 @@
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { Sparkles, Play, BarChart3, TrendingUp, Clock, Target, Shield, Sliders, Loader2, CheckCircle2, ChevronDown, ChevronUp, Save, Trash2, History, DollarSign, Plus, ToggleLeft, ToggleRight, GitCompare } from "lucide-react";
+import { Sparkles, Play, BarChart3, TrendingUp, Clock, Target, Shield, Sliders, Loader2, CheckCircle2, ChevronDown, ChevronUp, Save, Trash2, History, DollarSign, Plus, ToggleLeft, ToggleRight, GitCompare, Calendar, Layers } from "lucide-react";
 import { getApiUrl } from "@/lib/api";
 
 const API = typeof window !== "undefined" ? getApiUrl() : "";
@@ -49,7 +49,7 @@ export default function StrategiesPage() {
     // History
     const [history, setHistory] = useState<any[]>([]);
     const [showTrades, setShowTrades] = useState(false);
-    const [activeTab, setActiveTab] = useState<"results" | "optimize" | "costs" | "history">("results");
+    const [activeTab, setActiveTab] = useState<"results" | "optimize" | "costs" | "history" | "pivot">("results");
 
     useEffect(() => {
         setLoading(true);
@@ -299,7 +299,7 @@ export default function StrategiesPage() {
                         {/* ════════ RESULTS ════════ */}
                         {result && (<div>
                             <div style={{ display: "flex", gap: 0, marginBottom: 10, borderBottom: "1px solid var(--border-subtle)", alignItems: "center" }}>
-                                {([{ key: "results", icon: <BarChart3 style={{ width: 11, height: 11 }} />, label: "Results" }, { key: "costs", icon: <DollarSign style={{ width: 11, height: 11 }} />, label: "Cost Breakdown" }, { key: "optimize", icon: <GitCompare style={{ width: 11, height: 11 }} />, label: "Optimize & Compare" }, { key: "history", icon: <History style={{ width: 11, height: 11 }} />, label: "Run History" }] as const).map(tab => (
+                                {([{ key: "results", icon: <BarChart3 style={{ width: 11, height: 11 }} />, label: "Results" }, { key: "pivot", icon: <Layers style={{ width: 11, height: 11 }} />, label: "Year × DTE" }, { key: "costs", icon: <DollarSign style={{ width: 11, height: 11 }} />, label: "Cost Breakdown" }, { key: "optimize", icon: <GitCompare style={{ width: 11, height: 11 }} />, label: "Optimize & Compare" }, { key: "history", icon: <History style={{ width: 11, height: 11 }} />, label: "Run History" }] as const).map(tab => (
                                     <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ padding: "6px 14px", background: "none", border: "none", borderBottom: activeTab === tab.key ? "2px solid var(--accent)" : "2px solid transparent", color: activeTab === tab.key ? "var(--accent)" : "var(--text-muted)", fontWeight: activeTab === tab.key ? 700 : 400, fontSize: 11, cursor: "pointer", display: "flex", alignItems: "center", gap: 3 }}>{tab.icon} {tab.label}</button>
                                 ))}
                                 {/* Gross/Net toggle */}
@@ -404,6 +404,63 @@ export default function StrategiesPage() {
                                     </div>
                                 </>)}
                             </div>)}
+
+                            {activeTab === "pivot" && result.year_dte_matrix && (() => {
+                                const m = result.year_dte_matrix;
+                                const cols = m.dte_columns || [];
+                                const years = m.years || [];
+                                if (!years.length) return <div className="card" style={{ padding: 14 }}><p style={{ color: "var(--text-dim)", fontSize: 11 }}>No data available.</p></div>;
+                                return (<div className="card" style={{ padding: 14 }}>
+                                    <h4 style={{ fontSize: 12, fontWeight: 700, marginBottom: 12, display: "flex", alignItems: "center", gap: 5 }}><Layers style={{ width: 13, height: 13, color: "var(--accent)" }} /> Year × DTE Performance Matrix</h4>
+                                    <p style={{ fontSize: 10, color: "var(--text-dim)", marginBottom: 10 }}>Net P&L by Year (rows) × Days to Expiry (columns). <span style={{ color: "var(--text-muted)" }}>Trades shown below P&L.</span></p>
+                                    <div style={{ overflowX: "auto" }}>
+                                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                                            <thead><tr style={{ borderBottom: "2px solid var(--border-subtle)" }}>
+                                                <th style={{ padding: "8px 10px", textAlign: "left", fontWeight: 700, fontSize: 10, color: "var(--text-dim)", minWidth: 60 }}>YEAR</th>
+                                                {cols.map((c: string) => <th key={c} style={{ padding: "8px 6px", textAlign: "center", fontWeight: 700, fontSize: 10, color: "var(--accent)", minWidth: 90 }}>{c} DTE</th>)}
+                                                <th style={{ padding: "8px 10px", textAlign: "center", fontWeight: 700, fontSize: 10, color: "var(--text-primary)", borderLeft: "2px solid var(--border-subtle)", minWidth: 90 }}>TOTAL</th>
+                                            </tr></thead>
+                                            <tbody>
+                                                {years.map((yr: string) => {
+                                                    const yrTotal = m.year_totals?.[yr] || {};
+                                                    return (<tr key={yr} style={{ borderBottom: "1px solid var(--bg-tertiary)" }}>
+                                                        <td style={{ padding: "10px 10px", fontWeight: 700, fontSize: 13, color: "var(--accent)" }}>{yr}</td>
+                                                        {cols.map((c: string) => {
+                                                            const cell = m.data?.[yr]?.[c] || { trades: 0, net_pnl: 0, win_rate: 0 };
+                                                            const hasData = cell.trades > 0;
+                                                            return (<td key={c} style={{ padding: "6px", textAlign: "center", background: hasData ? (cell.net_pnl >= 0 ? "rgba(52,211,153,0.06)" : "rgba(239,68,68,0.06)") : undefined }}>
+                                                                {hasData ? <>
+                                                                    <div className="text-mono" style={{ fontSize: 13, fontWeight: 700, color: cell.net_pnl >= 0 ? "var(--green-bright)" : "var(--red-bright)" }}>{fmtRs(cell.net_pnl)}</div>
+                                                                    <div style={{ fontSize: 8, color: "var(--text-dim)", marginTop: 2 }}>{cell.trades} trades · {cell.win_rate}% WR</div>
+                                                                </> : <span style={{ color: "var(--text-dim)", fontSize: 10 }}>—</span>}
+                                                            </td>);
+                                                        })}
+                                                        <td style={{ padding: "6px", textAlign: "center", borderLeft: "2px solid var(--border-subtle)", background: yrTotal.net_pnl >= 0 ? "rgba(52,211,153,0.08)" : "rgba(239,68,68,0.08)" }}>
+                                                            <div className="text-mono" style={{ fontSize: 13, fontWeight: 700, color: yrTotal.net_pnl >= 0 ? "var(--green-bright)" : "var(--red-bright)" }}>{fmtRs(yrTotal.net_pnl || 0)}</div>
+                                                            <div style={{ fontSize: 8, color: "var(--text-dim)", marginTop: 2 }}>{yrTotal.trades || 0} · {yrTotal.win_rate || 0}%</div>
+                                                        </td>
+                                                    </tr>);
+                                                })}
+                                                {/* Column totals row */}
+                                                <tr style={{ borderTop: "2px solid var(--border-subtle)", background: "var(--bg-tertiary)" }}>
+                                                    <td style={{ padding: "10px 10px", fontWeight: 700, fontSize: 11 }}>TOTAL</td>
+                                                    {cols.map((c: string) => {
+                                                        const dt = m.dte_totals?.[c] || { trades: 0, net_pnl: 0, win_rate: 0 };
+                                                        return (<td key={c} style={{ padding: "6px", textAlign: "center" }}>
+                                                            <div className="text-mono" style={{ fontSize: 12, fontWeight: 700, color: dt.net_pnl >= 0 ? "var(--green-bright)" : "var(--red-bright)" }}>{fmtRs(dt.net_pnl)}</div>
+                                                            <div style={{ fontSize: 8, color: "var(--text-dim)" }}>{dt.trades} · {dt.win_rate}%</div>
+                                                        </td>);
+                                                    })}
+                                                    <td style={{ padding: "6px", textAlign: "center", borderLeft: "2px solid var(--border-subtle)" }}>
+                                                        <div className="text-mono" style={{ fontSize: 13, fontWeight: 700, color: result.summary.net_pnl >= 0 ? "var(--green-bright)" : "var(--red-bright)" }}>{fmtRs(result.summary.net_pnl)}</div>
+                                                        <div style={{ fontSize: 8, color: "var(--text-dim)" }}>{result.summary.total_trades} · {result.summary.win_rate}%</div>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>);
+                            })()}
 
                             {activeTab === "history" && (<div className="card" style={{ padding: 14 }}>
                                 <h4 style={{ fontSize: 12, fontWeight: 700, marginBottom: 10 }}>Backtest Run History</h4>

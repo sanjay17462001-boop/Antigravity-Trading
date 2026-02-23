@@ -189,6 +189,65 @@ def _result_to_dict(result: BacktestResult, dte_buckets=None) -> dict:
         except (TypeError, IndexError):
             parsed_buckets = None  # use defaults
 
+    # Year × DTE pivot matrix
+    dte_buckets_final = parsed_buckets or [(0, 3), (4, 7), (8, 14), (15, 999)]
+    dte_labels = []
+    for lo, hi in dte_buckets_final:
+        dte_labels.append(f"{lo}-{hi}" if hi < 999 else f"{lo}+")
+
+    # Build pivot: year_dte_matrix[year][dte_label] = {trades, wins, net_pnl, ...}
+    year_dte: dict[str, dict[str, list]] = {}
+    for t in result.active_trades:
+        yr = str(t.trade_date.year)
+        bucket_label = None
+        for (lo, hi), label in zip(dte_buckets_final, dte_labels):
+            if lo <= t.dte <= hi:
+                bucket_label = label
+                break
+        if not bucket_label:
+            continue
+        year_dte.setdefault(yr, {}).setdefault(bucket_label, []).append(t)
+
+    year_dte_matrix = {"years": sorted(year_dte.keys()), "dte_columns": dte_labels, "data": {}, "year_totals": {}, "dte_totals": {}}
+    for yr in sorted(year_dte.keys()):
+        year_dte_matrix["data"][yr] = {}
+        yr_all_trades = []
+        for label in dte_labels:
+            trades_list = year_dte.get(yr, {}).get(label, [])
+            yr_all_trades.extend(trades_list)
+            wins = [t for t in trades_list if t.net_pnl > 0]
+            year_dte_matrix["data"][yr][label] = {
+                "trades": len(trades_list),
+                "winners": len(wins),
+                "losers": len(trades_list) - len(wins),
+                "win_rate": round(len(wins) / len(trades_list) * 100, 1) if trades_list else 0,
+                "net_pnl": round(sum(t.net_pnl for t in trades_list), 2),
+                "gross_pnl": round(sum(t.gross_pnl for t in trades_list), 2),
+                "avg_pnl": round(sum(t.net_pnl for t in trades_list) / len(trades_list), 2) if trades_list else 0,
+            }
+        # Year total (row total)
+        yr_wins = [t for t in yr_all_trades if t.net_pnl > 0]
+        year_dte_matrix["year_totals"][yr] = {
+            "trades": len(yr_all_trades),
+            "winners": len(yr_wins),
+            "losers": len(yr_all_trades) - len(yr_wins),
+            "win_rate": round(len(yr_wins) / len(yr_all_trades) * 100, 1) if yr_all_trades else 0,
+            "net_pnl": round(sum(t.net_pnl for t in yr_all_trades), 2),
+            "gross_pnl": round(sum(t.gross_pnl for t in yr_all_trades), 2),
+        }
+    # DTE totals (column totals)
+    for label in dte_labels:
+        all_in_col = []
+        for yr in year_dte:
+            all_in_col.extend(year_dte.get(yr, {}).get(label, []))
+        col_wins = [t for t in all_in_col if t.net_pnl > 0]
+        year_dte_matrix["dte_totals"][label] = {
+            "trades": len(all_in_col),
+            "winners": len(col_wins),
+            "win_rate": round(len(col_wins) / len(all_in_col) * 100, 1) if all_in_col else 0,
+            "net_pnl": round(sum(t.net_pnl for t in all_in_col), 2),
+        }
+
     return {
         "strategy": result.strategy.to_dict() if result.strategy else {},
         "summary": {
@@ -203,7 +262,6 @@ def _result_to_dict(result: BacktestResult, dte_buckets=None) -> dict:
             "net_pnl": round(result.total_pnl, 2),
             "max_drawdown": round(result.max_drawdown, 2),
             "skipped_days": len(result.skipped_days),
-            # Fix #5 — Advanced ratios
             "profit_factor": round(result.profit_factor, 2) if result.profit_factor != float('inf') else 999,
             "payoff_ratio": round(result.payoff_ratio, 2) if result.payoff_ratio != float('inf') else 999,
             "expectancy": round(result.expectancy, 2),
@@ -217,10 +275,9 @@ def _result_to_dict(result: BacktestResult, dte_buckets=None) -> dict:
             "max_consecutive_wins": result.max_consecutive_wins,
             "max_consecutive_losses": result.max_consecutive_losses,
         },
-        # Fix #6 — Cost breakdown
         "cost_breakdown": result.cost_breakdown(),
-        # Fix #4 — Configurable DTE
         "dte_breakdown": result.dte_breakdown(parsed_buckets),
+        "year_dte_matrix": year_dte_matrix,
         "trades": trades,
         "equity_curve": equity_curve,
     }
