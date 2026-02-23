@@ -2,7 +2,8 @@
 
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
-import { Save, Shield, Bell, Database, Key, Wifi, WifiOff, Activity, CheckCircle, XCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Save, Shield, Bell, Database, Key, Wifi, WifiOff, Activity, CheckCircle, XCircle, Globe, Zap } from "lucide-react";
 
 const brokers = [
     { name: "Dhan", status: "connected", clientId: "1110311427", host: "api.dhan.co", mode: "Historical Data" },
@@ -22,12 +23,91 @@ const riskConfig = [
 ];
 
 export default function SettingsPage() {
+    const [backendUrl, setBackendUrl] = useState("");
+    const [backendStatus, setBackendStatus] = useState<"idle" | "testing" | "ok" | "fail">("idle");
+    const [saved, setSaved] = useState(false);
+
+    useEffect(() => {
+        const stored = localStorage.getItem("AG_API_URL") || "";
+        setBackendUrl(stored);
+    }, []);
+
+    const saveBackendUrl = () => {
+        const trimmed = backendUrl.trim().replace(/\/+$/, "");
+        if (trimmed) {
+            localStorage.setItem("AG_API_URL", trimmed);
+        } else {
+            localStorage.removeItem("AG_API_URL");
+        }
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+    };
+
+    const testBackend = async () => {
+        const url = backendUrl.trim().replace(/\/+$/, "") || "";
+        if (!url) { setBackendStatus("fail"); return; }
+        setBackendStatus("testing");
+        try {
+            const r = await fetch(`${url}/api/strategy-ai/strategies/list`, { signal: AbortSignal.timeout(5000) });
+            setBackendStatus(r.ok ? "ok" : "fail");
+        } catch {
+            setBackendStatus("fail");
+        }
+    };
+
     return (
         <div className="app-layout">
             <Sidebar />
             <main className="main-content">
                 <Header title="Settings" />
                 <div className="page-content fade-in">
+
+                    {/* Backend Connection — NEW */}
+                    <div className="card" style={{ marginBottom: "var(--space-xl)", border: "1px solid var(--accent-dim)" }}>
+                        <div className="card-header">
+                            <span className="card-title"><Globe style={{ width: 14, height: 14, display: "inline", marginRight: 6 }} />Backend Connection</span>
+                            {saved && <span style={{ color: "var(--green-bright)", fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}><CheckCircle style={{ width: 12, height: 12 }} /> Saved! Reload the page to apply.</span>}
+                        </div>
+                        <div style={{ padding: "0 0 4px" }}>
+                            <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12, lineHeight: 1.5 }}>
+                                Connect your Vercel frontend to a local Python backend via <strong>ngrok</strong>.
+                                Run <code style={{ background: "var(--bg-tertiary)", padding: "2px 6px", borderRadius: 4 }}>ngrok http 8000</code> and paste the URL below.
+                            </p>
+                            <div style={{ display: "flex", gap: 8, alignItems: "end" }}>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ fontSize: 10, color: "var(--text-dim)", display: "block", marginBottom: 4 }}>BACKEND URL</label>
+                                    <input
+                                        type="text"
+                                        value={backendUrl}
+                                        onChange={e => setBackendUrl(e.target.value)}
+                                        placeholder="https://xxxx-xxxx.ngrok-free.app"
+                                        style={{
+                                            width: "100%", padding: "10px 12px",
+                                            background: "var(--bg-tertiary)", border: "1px solid var(--border-subtle)",
+                                            borderRadius: "var(--radius-sm)", color: "var(--text-primary)",
+                                            fontSize: 13, fontFamily: "monospace", outline: "none",
+                                        }}
+                                    />
+                                </div>
+                                <button onClick={testBackend} className="btn btn-secondary" style={{ fontSize: 11, padding: "10px 14px", whiteSpace: "nowrap" }}>
+                                    <Zap style={{ width: 12, height: 12 }} />
+                                    {backendStatus === "testing" ? "Testing..." : "Test"}
+                                </button>
+                                <button onClick={saveBackendUrl} className="btn btn-primary" style={{ fontSize: 11, padding: "10px 14px", whiteSpace: "nowrap" }}>
+                                    <Save style={{ width: 12, height: 12 }} /> Save
+                                </button>
+                            </div>
+                            {backendStatus === "ok" && <div style={{ marginTop: 8, fontSize: 11, color: "var(--green-bright)", display: "flex", alignItems: "center", gap: 4 }}><CheckCircle style={{ width: 12, height: 12 }} /> Backend connected successfully!</div>}
+                            {backendStatus === "fail" && <div style={{ marginTop: 8, fontSize: 11, color: "var(--red-bright)", display: "flex", alignItems: "center", gap: 4 }}><XCircle style={{ width: 12, height: 12 }} /> Could not reach backend. Check the URL and ensure ngrok + uvicorn are running.</div>}
+                            <div style={{ marginTop: 12, padding: 12, background: "var(--bg-tertiary)", borderRadius: "var(--radius-sm)", fontSize: 11, color: "var(--text-dim)", lineHeight: 1.6 }}>
+                                <strong style={{ color: "var(--accent)" }}>Setup Guide:</strong><br />
+                                1. Run your Python backend: <code>python -m uvicorn dashboard.api.main:app --port 8000</code><br />
+                                2. Run ngrok: <code>ngrok http 8000</code><br />
+                                3. Copy the <code>Forwarding</code> URL (e.g. <code>https://xxxx.ngrok-free.app</code>)<br />
+                                4. Paste it above and click Save, then reload the page
+                            </div>
+                        </div>
+                    </div>
 
                     {/* Broker connections */}
                     <div className="card" style={{ marginBottom: "var(--space-xl)" }}>
