@@ -190,10 +190,15 @@ def _result_to_dict(result: BacktestResult, dte_buckets=None) -> dict:
             parsed_buckets = None  # use defaults
 
     # Year × DTE pivot matrix
-    dte_buckets_final = parsed_buckets or [(0, 3), (4, 7), (8, 14), (15, 999)]
+    dte_buckets_final = parsed_buckets or [(0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7), (8, 8), (9, 9), (10, 10)]
     dte_labels = []
     for lo, hi in dte_buckets_final:
-        dte_labels.append(f"{lo}-{hi}" if hi < 999 else f"{lo}+")
+        if lo == hi:
+            dte_labels.append(str(lo))
+        elif hi >= 999:
+            dte_labels.append(f"{lo}+")
+        else:
+            dte_labels.append(f"{lo}-{hi}")
 
     # Build pivot: year_dte_matrix[year][dte_label] = {trades, wins, net_pnl, ...}
     year_dte: dict[str, dict[str, list]] = {}

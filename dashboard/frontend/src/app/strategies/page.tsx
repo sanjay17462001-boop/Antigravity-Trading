@@ -37,7 +37,7 @@ export default function StrategiesPage() {
     const [lotSize, setLotSize] = useState(25);
     const [fromDate, setFromDate] = useState("2024-01-01"); const [toDate, setToDate] = useState("2024-12-31");
     const [slippage, setSlippage] = useState(0.5); const [brokerage, setBrokerage] = useState(20);
-    const [dteBucketsStr, setDteBucketsStr] = useState("0-3, 4-7, 8-14, 15+");
+    const [dteBucketsStr, setDteBucketsStr] = useState("0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10");
     // Backtest
     const [running, setRunning] = useState(false); const [result, setResult] = useState<any>(null); const [btError, setBtError] = useState("");
     // Cost layer toggle
@@ -60,7 +60,11 @@ export default function StrategiesPage() {
     function parseDteBuckets(): number[][] | null {
         try {
             const buckets = dteBucketsStr.split(",").map(s => s.trim()).filter(s => s.length > 0)
-                .map(p => p.endsWith("+") ? [parseInt(p), 999] : p.split("-").map(Number))
+                .map(p => {
+                    if (p.endsWith("+")) return [parseInt(p), 999];
+                    if (p.includes("-")) return p.split("-").map(Number);
+                    const n = parseInt(p); return isNaN(n) ? [] : [n, n]; // single day
+                })
                 .filter(b => b.length === 2 && b.every(n => !isNaN(n)));
             return buckets.length > 0 ? buckets : null;
         } catch { return null; }
