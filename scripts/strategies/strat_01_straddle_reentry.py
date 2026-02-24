@@ -23,7 +23,7 @@ from engine.options_backtester import _data_loader, load_expiry_calendar, get_ne
 
 def run_day(day_data, trade_date, dte, lot_size, exit_mode):
     """
-    Run one day of strategy. Returns list of trade dicts and logs.
+    Run one day of strategy. Returns list of trade dicts, logs, daily_pnl, vix.
     All price lookups use pre-built dicts — no DataFrame filtering in loop.
     """
     entry_t = time(9, 16)
@@ -33,6 +33,13 @@ def run_day(day_data, trade_date, dte, lot_size, exit_mode):
     profit_lock_trigger = 1500
     profit_lock_level = 200
     reentry_pct = 0.10
+
+    # ── Extract VIX ──
+    day_vix = 0.0
+    if "india_vix" in day_data.columns:
+        vix_vals = day_data["india_vix"].dropna()
+        if not vix_vals.empty:
+            day_vix = round(float(vix_vals.iloc[0]), 2)
 
     # ── Pre-build price caches (ONE DataFrame filter per strike/type) ──
     def build_cache(strike_rel, leg_type):
@@ -58,12 +65,12 @@ def run_day(day_data, trade_date, dte, lot_size, exit_mode):
     pe_cache, pe_abs = build_cache("ATM", "PUT")
 
     if not ce_cache or not pe_cache:
-        return [], [], 0
+        return [], [], 0, day_vix
 
     # ── Get entry prices ──
     entry_key = (entry_t.hour, entry_t.minute)
     if entry_key not in ce_cache or entry_key not in pe_cache:
-        return [], [], 0
+        return [], [], 0, day_vix
 
     ce_entry = ce_cache[entry_key]["open"]
     pe_entry = pe_cache[entry_key]["open"]
@@ -245,8 +252,8 @@ def run_day(day_data, trade_date, dte, lot_size, exit_mode):
             "absolute_strike": abs_s, "action": "SELL", "lots": 1, "quantity": qty,
             "entry_price": round(entry_p, 2), "exit_price": round(exit_p, 2),
             "entry_time": e_time, "exit_time": x_time, "exit_reason": x_reason,
-            "gross_pnl": round(gpnl, 2), "net_pnl": round(gpnl, 2),  # Zero costs
-            "dte": dte, "label": label,
+            "gross_pnl": round(gpnl, 2), "net_pnl": round(gpnl, 2),
+            "dte": dte, "label": label, "vix": day_vix,
         }
 
     result_trades = []
@@ -266,7 +273,7 @@ def run_day(day_data, trade_date, dte, lot_size, exit_mode):
         result_trades.append(make_trade("PE leg 2 (re-entry)", pe2_entry, pe2_exit_price, pe2_entry_time, pe2_exit_time or f"{exit_t.hour:02d}:{exit_t.minute:02d}", pe2_exit_reason, "PE", pe_abs))
 
     daily_pnl = sum(t["gross_pnl"] for t in result_trades)
-    return result_trades, logs, daily_pnl
+    return result_trades, logs, daily_pnl, day_vix
 
 
 def run_backtest(from_date, to_date, lot_size, exit_mode):
@@ -295,7 +302,7 @@ def run_backtest(from_date, to_date, lot_size, exit_mode):
         dte = (next_expiry - current).days if next_expiry else 0
 
         try:
-            trades, logs, dpnl = run_day(day_data, current, dte, lot_size, exit_mode)
+            trades, logs, dpnl, vix = run_day(day_data, current, dte, lot_size, exit_mode)
             if trades:
                 all_trades.extend(trades)
                 daily_pnl[current] = dpnl
